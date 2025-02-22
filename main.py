@@ -6,33 +6,12 @@ import numpy as np  # Calculs mathématiques
 import pygame  # Gestion audio
 import time  # Gestion des délais
 
-# =====================================================================
-# Partie 1 : Génération des sons avec Pygame
-# =====================================================================
-def generate_high_beep():
-    """Génère un son aigu (880Hz) avec Pygame."""
-    sample_rate = 44100  # Fréquence d'échantillonnage standard
-    frequency = 880      # Fréquences correspondant au La5 (aigu)
-    duration = 0.1       # Durée courte pour un son "sec"
-    
-    # Création d'une onde sinusoïdale
-    t = np.linspace(0, duration, int(sample_rate * duration), False)
-    wave = np.sin(2 * np.pi * frequency * t)
-    
-    # Conversion en format audio 16 bits et stéréo
-    wave = np.int16(wave * 32767)
-    stereo_wave = np.column_stack((wave, wave))
-    
-    return pygame.sndarray.make_sound(stereo_wave)
 
-def generate_low_beep():
-    """Génère un son grave (440Hz) avec Pygame (même logique que ci-dessus)."""
-    # ... (code identique avec frequency=440)
 
 # Initialisation du système audio Pygame
 pygame.mixer.init()
-high_beep = generate_high_beep()
-low_beep = generate_low_beep()
+# Chargement du fichier audio
+movement_sound = pygame.mixer.Sound("media/metronome.mp3")
 
 # =====================================================================
 # Partie 2 : Configuration de MediaPipe pour la détection des mains
@@ -102,23 +81,23 @@ try:
                     if hand_type == "Left":
                         # Mouvement vers le haut
                         if prev_y_left - current_y > threshold:
-                            high_beep.play()
+                            movement_sound.play()
                             last_sound_time = time.time()
                             print("Son HIGH joué (gauche)")
                         # Mouvement vers le bas
                         elif current_y - prev_y_left > threshold:
-                            low_beep.play()
+                            movement_sound.play()
                             last_sound_time = time.time()
                             print("Son LOW joué (gauche)")
                         prev_y_left = current_y  # Mise à jour de la position
                     else:  # Main droite
                         # Même logique que pour la main gauche
                         if prev_y_right - current_y > threshold:
-                            high_beep.play()
+                            movement_sound.play()
                             last_sound_time = time.time()
                             print("Son HIGH joué (droit)")
                         elif current_y - prev_y_right > threshold:
-                            low_beep.play()
+                            movement_sound.play()
                             last_sound_time = time.time()
                             print("Son LOW joué (droit)")
                         prev_y_right = current_y
