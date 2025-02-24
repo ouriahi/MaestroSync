@@ -7,11 +7,13 @@ import pygame  # Gestion audio
 import time  # Gestion des délais
 
 
-
+# =====================================================================
+# Partie 1 : Génération des sons avec Pygame
+# =====================================================================
 # Initialisation du système audio Pygame
 pygame.mixer.init()
 # Chargement du fichier audio
-movement_sound = pygame.mixer.Sound("media/metronome.mp3")
+movement_sound = pygame.mixer.Sound("media/metronome.wav")
 
 # =====================================================================
 # Partie 2 : Configuration de MediaPipe pour la détection des mains
@@ -83,23 +85,23 @@ try:
                         if prev_y_left - current_y > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son HIGH joué (gauche)")
+                            print("Son joué (gauche)")
                         # Mouvement vers le bas
                         elif current_y - prev_y_left > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son LOW joué (gauche)")
+                            print("Son joué (gauche)")
                         prev_y_left = current_y  # Mise à jour de la position
                     else:  # Main droite
                         # Même logique que pour la main gauche
                         if prev_y_right - current_y > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son HIGH joué (droit)")
+                            print("Son joué (droit)")
                         elif current_y - prev_y_right > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son LOW joué (droit)")
+                            print("Son joué (droit)")
                         prev_y_right = current_y
 
         # Affichage de l'image redimensionnée
