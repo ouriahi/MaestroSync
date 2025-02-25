@@ -28,6 +28,8 @@ Donner le rythme à ceux qui ne peuvent pas le voir
 - ⚡ **Traitement en temps réel** sur Raspberry Pi  
 - 👁️ **Accessibilité** pour les musiciens malvoyants  
 
+---
+
 ## 🔧 **Fonctionnement interne**
 
 ### **Flux de traitement optimisé** :
