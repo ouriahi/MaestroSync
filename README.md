@@ -28,9 +28,9 @@ Donner le rythme à ceux qui ne peuvent pas le voir
 - ⚡ **Traitement en temps réel** sur Raspberry Pi  
 - 👁️ **Accessibilité** pour les musiciens malvoyants  
 
-### 🔧 Fonctionnement interne
+## 🔧 **Fonctionnement interne**
 
-**Flux de traitement optimisé** :
+### **Flux de traitement optimisé** :
 1. **Thread dédié** pour la capture vidéo (évite les pertes de frames)
 2. **Pipeline de traitement** :
    - Conversion RGB → Détection MediaPipe → Calcul de déplacement
@@ -38,7 +38,7 @@ Donner le rythme à ceux qui ne peuvent pas le voir
    - File d'attente audio (évite les conflits de threads)
    - Mécanisme de throttling (délai paramétrable entre les sons)
 
-**Optimisations clés** :
+### **Optimisations clés** :
 - Utilisation de `queue.Queue` pour le buffering inter-threads
 - Prétraitement vidéo en basse résolution (320x240) pour fluidité
 - Calcul de distance Euclidienne optimisé avec NumPy
@@ -49,8 +49,8 @@ Donner le rythme à ceux qui ne peuvent pas le voir
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-FF6F00?logo=mediapipe)](https://mediapipe.dev/)  
 [![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?logo=opencv)](https://opencv.org/)  
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-C51A4A?logo=raspberrypi)](https://www.raspberrypi.org/)  
-[![Pygame](https://img.shields.io/badge/Pygame-000000?logo=pygame)](https://www.pygame.org/)
-[![Tkinter](https://img.shields.io/badge/GUI-Tkinter-%23075BAB)](https://docs.python.org/fr/3.13/library/tkinter.html)
+[![Pygame](https://img.shields.io/badge/Pygame-000000?logo=pygame)](https://www.pygame.org/)  
+[![Tkinter](https://img.shields.io/badge/Tkinter-%23075BAB?logo=tkinter)](https://docs.python.org/fr/3.13/library/tkinter.html/)
 
 ---
 
