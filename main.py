@@ -5,6 +5,8 @@ import mediapipe as mp
 import numpy as np
 import pygame
 import time
+import threading
+import queue
 
 # =====================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -16,6 +18,10 @@ class ConductorTracker:
         self.hands = None
         self.sound = None
         self.running = False
+    
+    # Files d'attente pour les frames vidéo et les événements audio
+        self.frame_queue = queue.Queue(maxsize=10)
+        self.audio_queue = queue.Queue(maxsize=10)
         
         # Paramètres de configuration
         self.config = {
@@ -60,7 +66,7 @@ class ConductorTracker:
         self.camera.start()
     
     # =================================================================
-    # Partie 3: Logique de détection de mouvement
+    # Partie 3: Détection de mouvement et déclenchement audio
     # =================================================================
     def detect_movement(self, hand_type, current_x, current_y):
         """Détecte le mouvement et déclenche le son si nécessaire"""
@@ -89,55 +95,98 @@ class ConductorTracker:
         # Mise à jour des positions
         self.positions[hand_type]['x'] = current_x
         self.positions[hand_type]['y'] = current_y
+
+    # =================================================================
+    # Partie 4: Boucle de capture vidéo (Thread dédié)
+    # =================================================================
+    def capture_loop(self):
+        """Capture en continu les frames depuis la caméra"""
+        while self.running:
+            frame = self.camera.capture_array()
+            try:
+                self.frame_queue.put(frame, timeout=0.05)
+            except queue.Full:
+                # Si la file d'attente est pleine, on ignore la frame
+                pass
+            time.sleep(0.01)
+
+    # =================================================================
+    # Partie 5: Boucle de traitement d'image et affichage (Thread dédié)
+    # =================================================================
+    def processing_loop(self):
+        """Traite les frames et affiche le flux vidéo"""
+        while self.running:
+            try:
+                frame = self.frame_queue.get(timeout=0.05)
+            except queue.Empty:
+                continue
+
+            # Conversion et traitement avec MediaPipe
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = self.hands.process(frame_rgb)
+
+            if results.multi_hand_landmarks:
+                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                    hand_type = handedness.classification[0].label.lower()
+                    wrist = hand_landmarks.landmark[0]
+                    h, w = frame.shape[:2]
+                    current_x = int(wrist.x * w)
+                    current_y = int(wrist.y * h)
+                    self.detect_movement(hand_type, current_x, current_y)
+
+            # Affichage du flux vidéo redimensionné
+            resized_frame = cv2.resize(frame, (640, 480))
+            cv2.imshow("Conductor Tracker", resized_frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                self.running = False
+            elif key == ord('d'):
+                self.config['debug_mode'] = not self.config['debug_mode']
+
+    # =================================================================
+    # Partie 6: Boucle de gestion audio (Thread dédié)
+    # =================================================================
+    def audio_loop(self):
+        """Joue les sons en fonction des événements reçus"""
+        while self.running:
+            try:
+                event = self.audio_queue.get(timeout=0.05)
+            except queue.Empty:
+                continue
+
+            if event == "beep":
+                self.sound.play()
     
     # =================================================================
-    # Partie 4: Boucle principale de traitement
+    # Partie 7: Démarrage de l'application en multithreading
     # =================================================================
     def run(self):
-        """Exécute la boucle principale de traitement"""
+        """Exécute la boucle principale avec plusieurs threads"""
         self.running = True
         self.last_sound_time = 0
-        
-        try:
-            while self.running:
-                frame = self.camera.capture_array()
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-                # Détection des mains
-                results = self.hands.process(frame_rgb)
-                
-                if results.multi_hand_landmarks:
-                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                        hand_type = handedness.classification[0].label.lower()
-                        wrist = hand_landmarks.landmark[0]
-                        
-                        h, w = frame.shape[:2]
-                        current_x = int(wrist.x * w)
-                        current_y = int(wrist.y * h)
-                        
-                        self.detect_movement(hand_type, current_x, current_y)
-                
-                # Affichage de la vidéo
-                resized_frame = cv2.resize(frame, (640, 480))
-                cv2.imshow("Conductor Tracker", resized_frame)
-                
-                # Gestion des entrées clavier
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    self.running = False
-                elif key == ord('d'):
-                    self.config['debug_mode'] = not self.config['debug_mode']
-        
-        except Exception as e:
-            print(f"Erreur: {str(e)}")
-        finally:
-            self.cleanup()
+
+        # Création des threads pour la capture, le traitement et l'audio
+        threads = []
+        capture_thread = threading.Thread(target=self.capture_loop)
+        processing_thread = threading.Thread(target=self.processing_loop)
+        audio_thread = threading.Thread(target=self.audio_loop)
+        threads.extend([capture_thread, processing_thread, audio_thread])
+
+        # Démarrage des threads
+        for t in threads:
+            t.start()
+
+        # Le thread principal attend la fin des autres threads
+        for t in threads:
+            t.join()
+
+        self.cleanup()
     
     # =================================================================
-    # Partie 5: Nettoyage des ressources
+    # Partie 8: Nettoyage des ressources
     # =================================================================
     def cleanup(self):
-        """Libère toutes les ressources"""
+        """Libère toutes les ressources et arrête les composants"""
         cv2.destroyAllWindows()
         if self.camera:
             self.camera.stop()
@@ -145,7 +194,7 @@ class ConductorTracker:
         print("Nettoyage terminé")
 
 # =====================================================================
-# Partie 6: Point d'entrée principal
+# Partie 9: Point d'entrée principal
 # =====================================================================
 if __name__ == "__main__":
     tracker = ConductorTracker()
