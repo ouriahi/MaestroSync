@@ -40,6 +40,8 @@ picam2.start()  # Démarrage du flux vidéo
 # =====================================================================
 prev_y_left = 0    # Position Y précédente de la main gauche
 prev_y_right = 0   # Position Y précédente de la main droite
+prev_x_left = 0    # Position X précédente de la main gauche
+prev_x_right = 0   # Position X précédente de la main droite
 threshold = 30     # Seuil de mouvement en pixels (à ajuster empiriquement)
 last_sound_time = 0  # Timestamp du dernier son joué
 sound_delay = 0.3    # Délai minimal entre deux sons (évite les répétitions trop rapides)
@@ -74,9 +76,10 @@ try:
                 wrist = hand_landmarks.landmark[0]
                 h, w, _ = frame.shape
                 current_y = int(wrist.y * h)  # Conversion des coordonnées normalisées
+                current_x = int(wrist.x * w)  # Conversion des coordonnées normalisées
 
-                # Debug : Affichage de la position Y
-                print(f"Main {hand_type} - Y: {current_y}")
+                # Debug : Affichage des positions X et Y
+                print(f"Main {hand_type} - X: {current_x}, Y: {current_y}")
 
                 # Logique de déclenchement des sons
                 if (time.time() - last_sound_time) > sound_delay:
@@ -85,24 +88,47 @@ try:
                         if prev_y_left - current_y > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son joué (gauche)")
+                            print("Son joué (gauche, mouvement vers le haut)")
                         # Mouvement vers le bas
                         elif current_y - prev_y_left > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son joué (gauche)")
-                        prev_y_left = current_y  # Mise à jour de la position
+                            print("Son joué (gauche, mouvement vers le bas)")
+                        # Mouvement vers la gauche
+                        if prev_x_left - current_x > threshold:
+                            movement_sound.play()
+                            last_sound_time = time.time()
+                            print("Son joué (gauche, mouvement vers la gauche)")
+                        # Mouvement vers la droite
+                        elif current_x - prev_x_left > threshold:
+                            movement_sound.play()
+                            last_sound_time = time.time()
+                            print("Son joué (gauche, mouvement vers la droite)")
+                        prev_y_left = current_y  # Mise à jour de la position Y
+                        prev_x_left = current_x  # Mise à jour de la position X
                     else:  # Main droite
-                        # Même logique que pour la main gauche
+                        # Mouvement vers le haut
                         if prev_y_right - current_y > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son joué (droit)")
+                            print("Son joué (droit, mouvement vers le haut)")
+                        # Mouvement vers le bas
                         elif current_y - prev_y_right > threshold:
                             movement_sound.play()
                             last_sound_time = time.time()
-                            print("Son joué (droit)")
-                        prev_y_right = current_y
+                            print("Son joué (droit, mouvement vers le bas)")
+                        # Mouvement vers la gauche
+                        if prev_x_right - current_x > threshold:
+                            movement_sound.play()
+                            last_sound_time = time.time()
+                            print("Son joué (droit, mouvement vers la gauche)")
+                        # Mouvement vers la droite
+                        elif current_x - prev_x_right > threshold:
+                            movement_sound.play()
+                            last_sound_time = time.time()
+                            print("Son joué (droit, mouvement vers la droite)")
+                        prev_y_right = current_y  # Mise à jour de la position Y
+                        prev_x_right = current_x  # Mise à jour de la position X
 
         # Affichage de l'image redimensionnée
         cv2.imshow("Conductor Tracker", cv2.resize(frame, (640, 480)))  # Agrandissement pour affichage
