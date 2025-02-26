@@ -40,6 +40,9 @@ class ConductorTracker:
             'right': {'x': 0, 'y': 0}
         }
 
+        # État de la LED
+        self.led_on = False
+
         self.initialize_components()
 
     # =================================================================
@@ -116,17 +119,20 @@ class ConductorTracker:
         prev_y = self.positions[hand_type]['y']
 
         movement_detected = False
+        self.led_on = False  # Éteindre la LED par défaut
         directions = []
 
         # Vérification des mouvements verticaux
         if abs(current_y - prev_y) > self.config['movement_threshold']:
             directions.append('Haut' if current_y < prev_y else 'Bas')
             movement_detected = True
+            self.led_on = True
 
         # Vérification des mouvements horizontaux
         if abs(current_x - prev_x) > self.config['movement_threshold']:
             directions.append('Gauche' if current_x < prev_x else 'Droite')
             movement_detected = True
+            self.led_on = True
 
         if movement_detected and (time.time() - self.last_sound_time) > self.config['sound_delay']:
             self.audio_queue.put("beep")
@@ -173,7 +179,24 @@ class ConductorTracker:
                     current_x = int(wrist.x * w)
                     current_y = int(wrist.y * h)
                     self.detect_movement(hand_type, current_x, current_y)
+            
+            # Calcul du BPM à partir des beats enregistrés durant les 10 dernières secondes
+            current_time = time.time()
+            # Garder uniquement les beats des 10 dernières secondes
+            self.beat_times = [t for t in self.beat_times if current_time - t <= 10]
+            if len(self.beat_times) >= 2:
+                total_time = self.beat_times[-1] - self.beat_times[0]
+                avg_interval = total_time / (len(self.beat_times) - 1)
+                bpm = 60 / avg_interval if avg_interval > 0 else 0
+            else:
+                bpm = 0
 
+            # Dessiner la LED sur le frame
+            led_color = (0, 255, 0) if self.led_on else (50, 50, 50)
+            cv2.circle(frame, (50, 50), 20, led_color, -1)
+
+            cv2.putText(resized_frame, f"BPM: {bpm:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            
             resized_frame = cv2.resize(frame, (640, 480))
             cv2.imshow("Conductor Tracker", resized_frame)
             key = cv2.waitKey(1) & 0xFF
