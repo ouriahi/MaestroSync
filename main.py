@@ -9,6 +9,7 @@ import threading
 import queue
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk
 
 # =====================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -45,6 +46,8 @@ class ConductorTracker:
 
         # Initialisation de beat_times
         self.beat_times = []
+
+        self.video_label = None  # Label pour afficher la vidéo
 
         self.initialize_components()
 
@@ -229,8 +232,17 @@ class ConductorTracker:
 
             resized_frame = cv2.resize(frame, (640, 480))
             cv2.putText(resized_frame, f"BPM: {bpm:.1f} ({tempo_name})", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            
-            cv2.imshow("Conductor Tracker", resized_frame)
+
+            # Convertir l'image pour Tkinter
+            img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+            imgtk = ImageTk.PhotoImage(image=img)
+
+            # Mettre à jour le label vidéo
+            if self.video_label:
+                self.video_label.imgtk = imgtk
+                self.video_label.configure(image=imgtk)
+
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 self.running = False
@@ -326,6 +338,10 @@ class SettingsWindow:
 
         self.stop_button = ttk.Button(self.root, text="Arrêter", command=self.stop_tracker)
         self.stop_button.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
+
+        # Ajout du label vidéo
+        self.tracker.video_label = ttk.Label(self.root)
+        self.tracker.video_label.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
 
     def update_threshold(self, event):
         new_value = self.threshold_var.get()
