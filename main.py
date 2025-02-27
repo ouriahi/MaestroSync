@@ -140,6 +140,7 @@ class ConductorTracker:
         if movement_detected and (time.time() - self.last_sound_time) > self.config['sound_delay']:
             self.audio_queue.put("beep")
             self.last_sound_time = time.time()
+            self.beat_times.append(self.last_sound_time)  # Ajouter le temps de battement
             if self.config['debug_mode']:
                 print(f"Mouvement {hand_type} détecté: {', '.join(directions)}")
 
