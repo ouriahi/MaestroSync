@@ -43,6 +43,9 @@ class ConductorTracker:
         # État de la LED
         self.led_on = False
 
+        # Initialisation de beat_times
+        self.beat_times = []
+
         self.initialize_components()
 
     # =================================================================
@@ -195,9 +198,9 @@ class ConductorTracker:
             led_color = (0, 255, 0) if self.led_on else (50, 50, 50)
             cv2.circle(frame, (50, 50), 20, led_color, -1)
 
+            resized_frame = cv2.resize(frame, (640, 480))
             cv2.putText(resized_frame, f"BPM: {bpm:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
-            resized_frame = cv2.resize(frame, (640, 480))
             cv2.imshow("Conductor Tracker", resized_frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
