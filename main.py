@@ -164,6 +164,31 @@ class ConductorTracker:
     # =================================================================
     # Partie 6: Boucle de traitement d'image et affichage (Thread dédié)
     # =================================================================
+    def get_tempo_name(self, bpm):
+        """Retourne le nom du tempo en fonction du BPM"""
+        if bpm < 20:
+            return "Larghissimo"
+        elif bpm < 40:
+            return "Grave"
+        elif bpm < 60:
+            return "Largo / Lento"
+        elif bpm < 76:
+            return "Adagio"
+        elif bpm < 108:
+            return "Andante"
+        elif bpm < 120:
+            return "Moderato"
+        elif bpm < 120:
+            return "Allegretto"
+        elif bpm < 168:
+            return "Allegro"
+        elif bpm < 176:
+            return "Vivace"
+        elif bpm < 200:
+            return "Presto"
+        else:
+            return "Prestissimo"
+
     def processing_loop(self):
         """Traite les frames et affiche le flux vidéo"""
         while self.running:
@@ -195,12 +220,15 @@ class ConductorTracker:
             else:
                 bpm = 0
 
+            # Obtenir le nom du tempo
+            tempo_name = self.get_tempo_name(bpm)
+
             # Dessiner la LED sur le frame
             led_color = (0, 255, 0) if self.led_on else (50, 50, 50)
             cv2.circle(frame, (50, 50), 20, led_color, -1)
 
             resized_frame = cv2.resize(frame, (640, 480))
-            cv2.putText(resized_frame, f"BPM: {bpm:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(resized_frame, f"BPM: {bpm:.1f} ({tempo_name})", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             cv2.imshow("Conductor Tracker", resized_frame)
             key = cv2.waitKey(1) & 0xFF
