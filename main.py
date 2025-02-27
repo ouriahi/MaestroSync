@@ -7,8 +7,7 @@ import pygame
 import time
 import threading
 import queue
-import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 from PIL import Image, ImageTk
 
 # =====================================================================
@@ -302,45 +301,42 @@ class ConductorTracker:
 
 
 # =====================================================================
-# Partie 11: Interface de réglage avec Tkinter
+# Partie 11: Interface de réglage avec CustomTkinter
 # =====================================================================
 class SettingsWindow:
     def __init__(self, tracker: ConductorTracker):
         self.tracker = tracker
-        self.root = tk.Tk()
+        self.root = ctk.CTk()
         self.root.title("Réglages Conductor Tracker")
 
-        # Création des variables Tkinter associées aux paramètres
-        self.threshold_var = tk.IntVar(value=self.tracker.config['movement_threshold'])
-        self.delay_var = tk.DoubleVar(value=self.tracker.config['sound_delay'])
-        self.debug_var = tk.BooleanVar(value=self.tracker.config['debug_mode'])
+        # Création des variables CustomTkinter associées aux paramètres
+        self.threshold_var = ctk.IntVar(value=self.tracker.config['movement_threshold'])
+        self.delay_var = ctk.DoubleVar(value=self.tracker.config['sound_delay'])
+        self.debug_var = ctk.BooleanVar(value=self.tracker.config['debug_mode'])
 
         # Construction de l'interface
-        ttk.Label(self.root, text="Seuil de mouvement (pixels):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.threshold_scale = ttk.Scale(self.root, from_=10, to=150, orient="horizontal",
-                                         variable=self.threshold_var, command=self.update_threshold)
+        ctk.CTkLabel(self.root, text="Seuil de mouvement (pixels):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.threshold_scale = ctk.CTkSlider(self.root, from_=10, to=150, variable=self.threshold_var, command=self.update_threshold)
         self.threshold_scale.grid(row=0, column=1, padx=5, pady=5)
 
-        ttk.Label(self.root, text="Délai sonore (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.delay_scale = ttk.Scale(self.root, from_=0.1, to=1.0, orient="horizontal",
-                                     variable=self.delay_var, command=self.update_delay)
+        ctk.CTkLabel(self.root, text="Délai sonore (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.delay_scale = ctk.CTkSlider(self.root, from_=0.1, to=1.0, variable=self.delay_var, command=self.update_delay)
         self.delay_scale.grid(row=1, column=1, padx=5, pady=5)
 
-        self.debug_check = ttk.Checkbutton(self.root, text="Mode Debug", variable=self.debug_var,
-                                           command=self.update_debug)
+        self.debug_check = ctk.CTkCheckBox(self.root, text="Mode Debug", variable=self.debug_var, command=self.update_debug)
         self.debug_check.grid(row=2, column=0, padx=5, pady=5, columnspan=2)
 
-        self.calibrate_button = ttk.Button(self.root, text="Calibrer", command=self.calibrate)
+        self.calibrate_button = ctk.CTkButton(self.root, text="Calibrer", command=self.calibrate)
         self.calibrate_button.grid(row=3, column=0, padx=5, pady=10)
 
-        self.start_button = ttk.Button(self.root, text="Démarrer", command=self.start_tracker)
+        self.start_button = ctk.CTkButton(self.root, text="Démarrer", command=self.start_tracker)
         self.start_button.grid(row=3, column=1, padx=5, pady=10)
 
-        self.stop_button = ttk.Button(self.root, text="Arrêter", command=self.stop_tracker)
+        self.stop_button = ctk.CTkButton(self.root, text="Arrêter", command=self.stop_tracker)
         self.stop_button.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
 
         # Ajout du label vidéo
-        self.tracker.video_label = ttk.Label(self.root)
+        self.tracker.video_label = ctk.CTkLabel(self.root)
         self.tracker.video_label.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
 
     def update_threshold(self, event):
