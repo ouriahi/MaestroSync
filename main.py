@@ -199,29 +199,42 @@ class ConductorTracker:
     # Partie 6: Boucle de traitement d'image et affichage (Thread dédié)
     # =================================================================
     def get_tempo_name(self, bpm):
-        """
-        Retourne le nom du tempo en fonction du BPM.
-        Par exemple, "Adagio" pour un tempo lent, "Allegro" pour un tempo rapide, etc.
-        """
-        if bpm < 20:
+        """Retourne le nom du tempo en fonction du BPM"""
+        if bpm <= 25:
             return "Larghissimo"
-        elif bpm < 40:
+        elif bpm <= 40:
             return "Grave"
-        elif bpm < 60:
+        elif bpm <= 45:
+            return "Grave / Largo"
+        elif bpm <= 60:
             return "Largo / Lento"
-        elif bpm < 76:
+        elif bpm <= 66:
+            return "Larghetto"
+        elif bpm <= 72:
             return "Adagio"
-        elif bpm < 108:
+        elif bpm <= 76:
+            return "Adagietto"
+        elif bpm <= 80:
             return "Andante"
-        elif bpm < 120:
+        elif bpm <= 92:
+            return "Andantino"
+        elif bpm <= 108:
+            return "Andante Moderato"
+        elif bpm <= 112:
             return "Moderato"
-        elif bpm < 120:  # Cette condition semble redondante, à ajuster si besoin
+        elif bpm <= 116:
             return "Allegretto"
-        elif bpm < 168:
+        elif bpm <= 120:
+            return "Allegro Moderato"
+        elif bpm <= 140:
             return "Allegro"
-        elif bpm < 176:
+        elif bpm <= 168:
             return "Vivace"
-        elif bpm < 200:
+        elif bpm <= 172:
+            return "Presto"
+        elif bpm <= 176:
+            return "Vivacissimo / Allegrissimo"
+        elif bpm <= 200:
             return "Presto"
         else:
             return "Prestissimo"
