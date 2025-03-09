@@ -9,6 +9,7 @@ import threading                    # Pour le multithreading
 import queue                        # Pour les files d'attente entre threads
 import customtkinter as ctk         # Pour l'interface graphique avec CustomTkinter
 from PIL import Image, ImageTk      # Pour la conversion d'images pour Tkinter
+import tensorflow as tf             # Pour les modèles de machine learning
 
 # =====================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -56,6 +57,9 @@ class ConductorTracker:
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
 
+        # Charger le modèle de reconnaissance des gestes
+        self.gesture_model = self.load_gesture_model()
+
     # =================================================================
     # Partie 2: Initialisation des composants
     # =================================================================
@@ -82,6 +86,11 @@ class ConductorTracker:
         )
         self.camera.configure(config)  # Application de la configuration
         self.camera.start()            # Démarrage de la caméra
+
+    def load_gesture_model(self):
+        """Charge le modèle de reconnaissance des gestes."""
+        model = tf.keras.models.load_model("path/to/gesture_model.h5")
+        return model
 
     # =================================================================
     # Partie 3: Calibration
@@ -246,6 +255,21 @@ class ConductorTracker:
         else:
             return "Prestissimo"
 
+    def recognize_gesture(self, landmarks):
+        """Reconnaît le geste à partir des landmarks de la main."""
+        # Préparer les données pour le modèle
+        input_data = np.array([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten()
+        input_data = np.expand_dims(input_data, axis=0)
+        # Prédire le geste
+        prediction = self.gesture_model.predict(input_data)
+        gesture = np.argmax(prediction)
+        return gesture
+
+    def get_gesture_name(self, gesture):
+        """Retourne le nom du geste en fonction de l'index."""
+        gestures = ["Levée", "Battue", "Dynamique", "Arrêt"]
+        return gestures[gesture]
+
     def processing_loop(self):
         """Traite les frames vidéo, détecte les mouvements, calcule le BPM et met à jour l'affichage."""
         while self.running:
@@ -273,6 +297,12 @@ class ConductorTracker:
                     current_y = int(wrist.y * h)
                     # Détection de mouvement pour cette main
                     self.detect_movement(hand_type, current_x, current_y)
+
+                    # Reconnaissance du geste
+                    gesture = self.recognize_gesture(hand_landmarks.landmark)
+                    gesture_name = self.get_gesture_name(gesture)
+                    # Affichage du geste reconnu sur la frame
+                    cv2.putText(frame, f"Geste: {gesture_name}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
             current_time = time.time()
