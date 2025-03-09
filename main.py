@@ -99,7 +99,7 @@ class ConductorTracker:
         Charge le modèle TensorFlow pour la reconnaissance des gestes.
         Assurez-vous que le chemin vers le modèle est correct.
         """
-        model = tf.keras.models.load_model("path/to/gesture_model.h5")
+        model = tf.keras.models.load_model("data/gesture_model.h5")
         return model
 
     # =============================================================================

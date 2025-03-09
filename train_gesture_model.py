@@ -26,4 +26,4 @@ model.compile(optimizer=Adam(), loss='sparse_categorical_crossentropy', metrics=
 model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
 
 # Enregistrer le modèle
-model.save("path/to/gesture_model.h5")
+model.save("data/gesture_model.h5")
