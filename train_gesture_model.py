@@ -5,11 +5,8 @@ from tensorflow.keras.optimizers import Adam
 import numpy as np
 
 # Charger les données d'entraînement
-# Remplacez ceci par le chargement de vos propres données
-# X_train doit être un tableau de shape (num_samples, num_landmarks * 3)
-# y_train doit être un tableau de shape (num_samples,) contenant les labels des gestes
-X_train = np.load("path/to/X_train.npy")
-y_train = np.load("path/to/y_train.npy")
+X_train = np.load("data/X_train.npy")
+y_train = np.load("data/Y_train.npy")
 
 # Définir le modèle
 model = Sequential([
