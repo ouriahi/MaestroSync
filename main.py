@@ -50,6 +50,9 @@ class ConductorTracker:
         # Label pour afficher la vidéo dans l'interface graphique (sera défini dans SettingsWindow)
         self.video_label = None
 
+        # Main par défaut pour donner le tempo
+        self.tempo_hand = 'right'
+
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
 
@@ -141,6 +144,10 @@ class ConductorTracker:
         Détecte le mouvement en comparant la position actuelle avec la position précédente.
         Si le mouvement dépasse le seuil défini, déclenche un signal audio et active la LED.
         """
+        # Ne tester que la main sélectionnée pour donner le tempo
+        if hand_type != self.tempo_hand:
+            return
+
         # Récupération des positions précédentes pour la main donnée
         prev_x = self.positions[hand_type]['x']
         prev_y = self.positions[hand_type]['y']
@@ -399,6 +406,12 @@ class SettingsWindow:
         self.debug_check = ctk.CTkCheckBox(self.root, text="Mode Debug", variable=self.debug_var, command=self.update_debug)
         self.debug_check.grid(row=2, column=0, padx=5, pady=5, columnspan=2)
 
+        # Option pour choisir la main qui donne le tempo
+        self.tempo_hand_var = ctk.StringVar(value=self.tracker.tempo_hand)
+        ctk.CTkLabel(self.root, text="Main pour le tempo:").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.tempo_hand_option = ctk.CTkOptionMenu(self.root, variable=self.tempo_hand_var, values=["left", "right"], command=self.update_tempo_hand)
+        self.tempo_hand_option.grid(row=5, column=1, padx=5, pady=5)
+
         # Bouton pour lancer la phase de calibrage
         self.calibrate_button = ctk.CTkButton(self.root, text="Calibrer", command=self.calibrate)
         self.calibrate_button.grid(row=3, column=0, padx=5, pady=10)
@@ -432,6 +445,12 @@ class SettingsWindow:
         new_value = self.debug_var.get()
         self.tracker.config['debug_mode'] = new_value
         print("Mode Debug :", new_value)
+
+    def update_tempo_hand(self, event):
+        """Mise à jour de la main qui donne le tempo dans la configuration du tracker."""
+        new_value = self.tempo_hand_var.get()
+        self.tracker.tempo_hand = new_value
+        print("Main pour le tempo mise à jour :", new_value)
 
     def calibrate(self):
         """Lance la phase de calibrage et met à jour le seuil dans l'interface."""
