@@ -12,6 +12,7 @@ import queue                        # Communication entre threads (files d'atten
 import customtkinter as ctk         # Interface graphique (CustomTkinter)
 from PIL import Image, ImageTk      # Conversion d'images pour affichage avec Tkinter
 import tensorflow as tf             # Utilisation de modèles de machine learning
+import os                           # Pour la gestion des fichiers et des répertoires
 
 # =============================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -61,6 +62,16 @@ class ConductorTracker:
 
         # Chargement du modèle de reconnaissance des gestes (machine learning)
         self.gesture_model = self.load_gesture_model()
+
+        # Indicateur de collecte de données
+        self.collecting_data = False
+        # Répertoire pour stocker les données collectées
+        self.data_dir = "data/dataset"
+        os.makedirs(self.data_dir, exist_ok=True)  # Créer le répertoire s'il n'existe pas
+        # Liste pour stocker les données de gestes
+        self.gesture_data = []
+        # Liste pour stocker les labels des gestes
+        self.gesture_labels = []
 
     # =============================================================================
     # Partie 2: Initialisation des composants
@@ -340,6 +351,12 @@ class ConductorTracker:
                     # Affichage du geste reconnu sur la frame
                     cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+                    # Collecte des données si activée
+                    if self.collecting_data:
+                        landmarks = [[landmark.x, landmark.y, landmark.z] for landmark in hand_landmarks.landmark]
+                        self.gesture_data.append(landmarks)
+                        self.gesture_labels.append(self.current_gesture_label)
             
             # Calcul du BPM à partir des battements enregistrés durant les 10 dernières secondes
             current_time = time.time()
@@ -447,8 +464,26 @@ class ConductorTracker:
         pygame.quit()
         print("Nettoyage terminé")
 
+    # =============================================================================
+    # Partie 11: Collecte des données de gestes
+    # =============================================================================
+    def start_data_collection(self, gesture_label):
+        """Démarre la collecte des données pour un geste spécifique."""
+        self.collecting_data = True
+        self.current_gesture_label = gesture_label
+        print(f"Collecte des données pour le geste: {gesture_label}")
+
+    def stop_data_collection(self):
+        """Arrête la collecte des données."""
+        self.collecting_data = False
+        print("Collecte des données arrêtée.")
+        # Sauvegarder les données collectées
+        np.save(os.path.join(self.data_dir, "X_data.npy"), np.array(self.gesture_data))
+        np.save(os.path.join(self.data_dir, "Y_data.npy"), np.array(self.gesture_labels))
+        print("Données sauvegardées.")
+
 # =============================================================================
-# Partie 11: Interface de réglage avec CustomTkinter
+# Partie 12: Interface de réglage avec CustomTkinter
 # =============================================================================
 class SettingsWindow:
     def __init__(self, tracker: ConductorTracker):
@@ -500,6 +535,18 @@ class SettingsWindow:
         self.tracker.video_label = ctk.CTkLabel(self.root)
         self.tracker.video_label.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
 
+        # Boutons pour démarrer et arrêter la collecte de données
+        self.collect_data_button = ctk.CTkButton(self.root, text="Démarrer Collecte", command=self.start_data_collection)
+        self.collect_data_button.grid(row=6, column=0, padx=5, pady=10)
+        self.stop_collect_data_button = ctk.CTkButton(self.root, text="Arrêter Collecte", command=self.stop_data_collection)
+        self.stop_collect_data_button.grid(row=6, column=1, padx=5, pady=10)
+
+        # Option pour choisir le geste à collecter
+        self.gesture_var = ctk.StringVar(value="Levée")
+        ctk.CTkLabel(self.root, text="Geste à collecter:").grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.gesture_option = ctk.CTkOptionMenu(self.root, variable=self.gesture_var, values=["Levée", "Battue", "Dynamique", "Arrêt"])
+        self.gesture_option.grid(row=7, column=1, padx=5, pady=5)
+
     def update_threshold(self, event):
         """Mise à jour du seuil de mouvement selon la valeur du curseur."""
         new_value = self.threshold_var.get()
@@ -541,12 +588,21 @@ class SettingsWindow:
         self.tracker.stop()
         self.root.quit()
 
+    def start_data_collection(self):
+        """Démarre la collecte des données pour le geste sélectionné."""
+        gesture_label = self.gesture_var.get()
+        self.tracker.start_data_collection(gesture_label)
+
+    def stop_data_collection(self):
+        """Arrête la collecte des données."""
+        self.tracker.stop_data_collection()
+
     def run(self):
         """Lance la boucle principale de l'interface graphique."""
         self.root.mainloop()
 
 # =============================================================================
-# Partie 12: Point d'entrée principal
+# Partie 13: Point d'entrée principal
 # =============================================================================
 if __name__ == "__main__":
     # Création de l'instance principale du tracker
