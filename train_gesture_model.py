@@ -5,8 +5,8 @@ from tensorflow.keras.optimizers import Adam
 import numpy as np
 
 # Charger les données d'entraînement
-X_train = np.load("data/X_train.npy")
-y_train = np.load("data/Y_train.npy")
+X_train = np.load("data/dataset/X_data.npy")
+y_train = np.load("data/dataset/Y_data.npy")
 
 # Définir le modèle
 model = Sequential([
