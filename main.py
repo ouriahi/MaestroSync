@@ -67,7 +67,8 @@ class ConductorTracker:
         self.collecting_data = False
         # Répertoire pour stocker les données collectées
         self.data_dir = "data/dataset"
-        os.makedirs(self.data_dir, exist_ok=True)  # Créer le répertoire s'il n'existe pas
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)  # Créer le répertoire s'il n'existe pas
         # Liste pour stocker les données de gestes
         self.gesture_data = []
         self.gesture_labels = []
