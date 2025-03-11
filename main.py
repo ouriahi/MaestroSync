@@ -70,8 +70,8 @@ class ConductorTracker:
         os.makedirs(self.data_dir, exist_ok=True)  # Créer le répertoire s'il n'existe pas
         # Liste pour stocker les données de gestes
         self.gesture_data = []
-        # Liste pour stocker les labels des gestes
         self.gesture_labels = []
+        self.current_gesture_label = None
 
     # =============================================================================
     # Partie 2: Initialisation des composants
@@ -544,7 +544,7 @@ class SettingsWindow:
         # Option pour choisir le geste à collecter
         self.gesture_var = ctk.StringVar(value="Levée")
         ctk.CTkLabel(self.root, text="Geste à collecter:").grid(row=7, column=0, padx=5, pady=5, sticky="w")
-        self.gesture_option = ctk.CTkOptionMenu(self.root, variable=self.gesture_var, values=["Levée", "Battue", "Dynamique", "Arrêt"])
+        self.gesture_option = ctk.CTkOptionMenu(self.root, variable=self.gesture_var, values=["Levée", "Crescendo", "Diminuendo", "Arrêt"])
         self.gesture_option.grid(row=7, column=1, padx=5, pady=5)
 
     def update_threshold(self, event):
