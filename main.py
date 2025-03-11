@@ -11,7 +11,7 @@ import threading                    # Pour l'exécution de plusieurs tâches en 
 import queue                        # Communication entre threads (files d'attente)
 import customtkinter as ctk         # Interface graphique (CustomTkinter)
 from PIL import Image, ImageTk      # Conversion d'images pour affichage avec Tkinter
-import tensorflow as tf             # Utilisation de modèles de machine learning
+import torch                        # Utilisation de PyTorch pour les modèles de machine learning
 import os                           # Pour la gestion des fichiers et des répertoires
 
 # =============================================================================
@@ -107,11 +107,12 @@ class ConductorTracker:
 
     def load_gesture_model(self):
         """
-        Charge le modèle TensorFlow pour la reconnaissance des gestes.
+        Charge le modèle PyTorch pour la reconnaissance des gestes.
         Si le modèle n'est pas disponible, retourne None.
         """
         try:
-            model = tf.keras.models.load_model("data/gesture_model.h5")
+            model = torch.load("data/gesture_model.pth")
+            model.eval()  # Mettre le modèle en mode évaluation
             print("Modèle de reconnaissance des gestes chargé avec succès.")
             return model
         except (IOError, ValueError) as e:
@@ -302,11 +303,11 @@ class ConductorTracker:
             return None
 
         # Préparation des données d'entrée pour le modèle
-        input_data = np.array([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten()
-        input_data = np.expand_dims(input_data, axis=0)
-        # Prédiction du geste via le modèle TensorFlow
-        prediction = self.gesture_model.predict(input_data)
-        gesture = np.argmax(prediction)
+        input_data = torch.tensor([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten().unsqueeze(0)
+        # Prédiction du geste via le modèle PyTorch
+        with torch.no_grad():
+            prediction = self.gesture_model(input_data)
+        gesture = torch.argmax(prediction).item()
         return gesture
 
     def get_gesture_name(self, gesture):
