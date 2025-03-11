@@ -108,10 +108,15 @@ class ConductorTracker:
     def load_gesture_model(self):
         """
         Charge le modèle TensorFlow pour la reconnaissance des gestes.
-        Assurez-vous que le chemin vers le modèle est correct.
+        Si le modèle n'est pas disponible, retourne None.
         """
-        model = tf.keras.models.load_model("data/gesture_model.h5")
-        return model
+        try:
+            model = tf.keras.models.load_model("data/gesture_model.h5")
+            print("Modèle de reconnaissance des gestes chargé avec succès.")
+            return model
+        except (IOError, ValueError) as e:
+            print("Aucun modèle de reconnaissance des gestes trouvé. Mode collecte de données activé.")
+            return None
 
     # =============================================================================
     # Partie 3: Calibration
@@ -288,10 +293,14 @@ class ConductorTracker:
         """
         Utilise le modèle de machine learning pour reconnaître le geste à partir
         des landmarks (points de repère) de la main.
+        Si le modèle n'est pas disponible, retourne None.
 
         :param landmarks: Liste des landmarks détectés
-        :return: Index du geste reconnu
+        :return: Index du geste reconnu ou None si le modèle n'est pas disponible
         """
+        if self.gesture_model is None:
+            return None
+
         # Préparation des données d'entrée pour le modèle
         input_data = np.array([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten()
         input_data = np.expand_dims(input_data, axis=0)
@@ -347,10 +356,11 @@ class ConductorTracker:
 
                     # Reconnaissance du geste effectué par la main
                     gesture = self.recognize_gesture(hand_landmarks.landmark)
-                    gesture_name = self.get_gesture_name(gesture)
-                    # Affichage du geste reconnu sur la frame
-                    cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    if gesture is not None:
+                        gesture_name = self.get_gesture_name(gesture)
+                        # Affichage du geste reconnu sur la frame
+                        cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
                     # Collecte des données si activée
                     if self.collecting_data:
