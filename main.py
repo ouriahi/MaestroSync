@@ -515,49 +515,65 @@ class SettingsWindow:
         self.debug_var = ctk.BooleanVar(value=self.tracker.config['debug_mode'])
 
         # Construction de l'interface graphique
-        # Curseur pour régler le seuil de mouvement
-        ctk.CTkLabel(self.root, text="Seuil de mouvement (pixels):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.threshold_scale = ctk.CTkSlider(self.root, from_=10, to=150, variable=self.threshold_var, command=self.update_threshold)
+        self.create_widgets()
+
+    def create_widgets(self):
+        """Crée et organise les widgets de l'interface graphique."""
+        # Frame pour les réglages de mouvement
+        movement_frame = ctk.CTkFrame(self.root)
+        movement_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        ctk.CTkLabel(movement_frame, text="Seuil de mouvement (pixels):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.threshold_scale = ctk.CTkSlider(movement_frame, from_=10, to=150, variable=self.threshold_var, command=self.update_threshold)
         self.threshold_scale.grid(row=0, column=1, padx=5, pady=5)
 
-        # Curseur pour régler le délai sonore
-        ctk.CTkLabel(self.root, text="Délai sonore (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.delay_scale = ctk.CTkSlider(self.root, from_=0.1, to=1.0, variable=self.delay_var, command=self.update_delay)
+        ctk.CTkLabel(movement_frame, text="Délai sonore (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.delay_scale = ctk.CTkSlider(movement_frame, from_=0.1, to=1.0, variable=self.delay_var, command=self.update_delay)
         self.delay_scale.grid(row=1, column=1, padx=5, pady=5)
 
-        # Checkbox pour activer/désactiver le mode debug
-        self.debug_check = ctk.CTkCheckBox(self.root, text="Mode Debug", variable=self.debug_var, command=self.update_debug)
+        self.debug_check = ctk.CTkCheckBox(movement_frame, text="Mode Debug", variable=self.debug_var, command=self.update_debug)
         self.debug_check.grid(row=2, column=0, padx=5, pady=5, columnspan=2)
 
-        # Option de sélection de la main utilisée pour le tempo
+        # Frame pour les réglages de tempo
+        tempo_frame = ctk.CTkFrame(self.root)
+        tempo_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+
+        ctk.CTkLabel(tempo_frame, text="Main pour le tempo:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.tempo_hand_var = ctk.StringVar(value=self.tracker.tempo_hand)
-        ctk.CTkLabel(self.root, text="Main pour le tempo:").grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        self.tempo_hand_option = ctk.CTkOptionMenu(self.root, variable=self.tempo_hand_var, values=["left", "right"], command=self.update_tempo_hand)
-        self.tempo_hand_option.grid(row=5, column=1, padx=5, pady=5)
+        self.tempo_hand_option = ctk.CTkOptionMenu(tempo_frame, variable=self.tempo_hand_var, values=["left", "right"], command=self.update_tempo_hand)
+        self.tempo_hand_option.grid(row=0, column=1, padx=5, pady=5)
 
-        # Boutons pour lancer la calibration, démarrer et arrêter le tracker
-        self.calibrate_button = ctk.CTkButton(self.root, text="Calibrer", command=self.calibrate)
-        self.calibrate_button.grid(row=3, column=0, padx=5, pady=10)
-        self.start_button = ctk.CTkButton(self.root, text="Démarrer", command=self.start_tracker)
-        self.start_button.grid(row=3, column=1, padx=5, pady=10)
-        self.stop_button = ctk.CTkButton(self.root, text="Arrêter", command=self.stop_tracker)
-        self.stop_button.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
+        # Frame pour les boutons de contrôle
+        control_frame = ctk.CTkFrame(self.root)
+        control_frame.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Label d'affichage vidéo dans l'interface
-        self.tracker.video_label = ctk.CTkLabel(self.root)
-        self.tracker.video_label.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
+        self.calibrate_button = ctk.CTkButton(control_frame, text="Calibrer", command=self.calibrate)
+        self.calibrate_button.grid(row=0, column=0, padx=5, pady=10)
+        self.start_button = ctk.CTkButton(control_frame, text="Démarrer", command=self.start_tracker)
+        self.start_button.grid(row=0, column=1, padx=5, pady=10)
+        self.stop_button = ctk.CTkButton(control_frame, text="Arrêter", command=self.stop_tracker)
+        self.stop_button.grid(row=1, column=0, columnspan=2, padx=5, pady=10)
 
-        # Boutons pour démarrer et arrêter la collecte de données
-        self.collect_data_button = ctk.CTkButton(self.root, text="Démarrer Collecte", command=self.start_data_collection)
-        self.collect_data_button.grid(row=6, column=0, padx=5, pady=10)
-        self.stop_collect_data_button = ctk.CTkButton(self.root, text="Arrêter Collecte", command=self.stop_data_collection)
-        self.stop_collect_data_button.grid(row=6, column=1, padx=5, pady=10)
+        # Frame pour la collecte de données
+        data_frame = ctk.CTkFrame(self.root)
+        data_frame.grid(row=3, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Option pour choisir le geste à collecter
+        self.collect_data_button = ctk.CTkButton(data_frame, text="Démarrer Collecte", command=self.start_data_collection)
+        self.collect_data_button.grid(row=0, column=0, padx=5, pady=10)
+        self.stop_collect_data_button = ctk.CTkButton(data_frame, text="Arrêter Collecte", command=self.stop_data_collection)
+        self.stop_collect_data_button.grid(row=0, column=1, padx=5, pady=10)
+
+        ctk.CTkLabel(data_frame, text="Geste à collecter:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.gesture_var = ctk.StringVar(value="Levée")
-        ctk.CTkLabel(self.root, text="Geste à collecter:").grid(row=7, column=0, padx=5, pady=5, sticky="w")
-        self.gesture_option = ctk.CTkOptionMenu(self.root, variable=self.gesture_var, values=["Levée", "Crescendo", "Diminuendo", "Arrêt"])
-        self.gesture_option.grid(row=7, column=1, padx=5, pady=5)
+        self.gesture_option = ctk.CTkOptionMenu(data_frame, variable=self.gesture_var, values=["Levée", "Crescendo", "Diminuendo", "Arrêt"])
+        self.gesture_option.grid(row=1, column=1, padx=5, pady=5)
+
+        # Frame pour l'affichage vidéo
+        video_frame = ctk.CTkFrame(self.root)
+        video_frame.grid(row=4, column=0, padx=10, pady=10, sticky="nsew")
+
+        self.tracker.video_label = ctk.CTkLabel(video_frame)
+        self.tracker.video_label.grid(row=0, column=0, padx=5, pady=10)
 
     def update_threshold(self, event):
         """Mise à jour du seuil de mouvement selon la valeur du curseur."""
