@@ -66,15 +66,6 @@ class ConductorTracker:
 
         # Indicateur de collecte de données
         self.collecting_data = False
-        # Répertoire pour stocker les données collectées
-        self.data_dir = "data/dataset"
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)  # Créer le répertoire s'il n'existe pas
-        # Liste pour stocker les données de gestes
-        self.gesture_data = []
-        self.gesture_labels = []
-        self.current_gesture_label = None
-        self.collecting_hand = 'left'  # Main par défaut pour la collecte de données
 
     # =============================================================================
     # Partie 2: Initialisation des composants
@@ -356,17 +347,6 @@ class ConductorTracker:
                             # Affichage du geste reconnu sur la frame
                             cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-                    # Collecte des données si activée et pour la main sélectionnée
-                    if self.collecting_data and hand_type == self.collecting_hand:
-                        landmarks = [[landmark.x, landmark.y, landmark.z] for landmark in hand_landmarks.landmark]
-                        self.gesture_data.append(landmarks)
-                        self.gesture_labels.append(self.current_gesture_label)
-                        # Tracer les landmarks sur la frame
-                        for landmark in hand_landmarks.landmark:
-                            x = int(landmark.x * w)
-                            y = int(landmark.y * h)
-                            cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
             
             # Calcul du BPM à partir des battements enregistrés durant les 10 dernières secondes
             current_time = time.time()
@@ -473,35 +453,6 @@ class ConductorTracker:
             self.camera.stop()
         pygame.quit()
         print("Nettoyage terminé")
-
-    # =============================================================================
-    # Partie 11: Collecte des données de gestes
-    # =============================================================================
-    def start_data_collection(self, gesture_label, hand):
-        """Démarre la collecte des données pour un geste spécifique et une main spécifique."""
-        self.collecting_data = True
-        self.current_gesture_label = gesture_label
-        self.collecting_hand = hand
-        print(f"Collecte des données pour le geste: {gesture_label} avec la main: {hand}")
-
-    def stop_data_collection(self):
-        """Arrête la collecte des données."""
-        self.collecting_data = False
-        print("Collecte des données arrêtée.")
-        # Générer des données pour les deux mains
-        generated_gesture_data = []
-        generated_gesture_labels = []
-        for landmarks, label in zip(self.gesture_data, self.gesture_labels):
-            generated_gesture_data.append(landmarks)
-            generated_gesture_labels.append(label)
-            # Générer les données pour la main opposée
-            mirrored_landmarks = [[-x, y, z] for x, y, z in landmarks]
-            generated_gesture_data.append(mirrored_landmarks)
-            generated_gesture_labels.append(label)
-        # Sauvegarder les données collectées
-        np.save(os.path.join(self.data_dir, "X_data.npy"), np.array(generated_gesture_data))
-        np.save(os.path.join(self.data_dir, "Y_data.npy"), np.array(generated_gesture_labels))
-        print("Données sauvegardées.")
 
     def update_tempo_hand(self, new_tempo_hand):
         """Mise à jour de la main utilisée pour donner le tempo et la main pour la reconnaissance des gestes."""
