@@ -51,11 +51,12 @@ class ConductorTracker:
         # Liste pour enregistrer les temps des battements (pour le calcul du BPM)
         self.beat_times = []
 
-        # Label qui sera utilisé pour afficher la vidéo dans l'interface graphique (sera défini plus tard)
+        # Label qui sera utilisé pour afficher la vidéo dans l'interface graphique
         self.video_label = None
 
         # Main par défaut utilisée pour donner le tempo (ici la main droite)
         self.tempo_hand = 'right'
+        self.gesture_hand = 'left'  # Main opposée pour la reconnaissance des gestes
 
         # Initialisation des composants (caméra, audio, détection de mains)
         self.initialize_components()
@@ -73,6 +74,7 @@ class ConductorTracker:
         self.gesture_data = []
         self.gesture_labels = []
         self.current_gesture_label = None
+        self.collecting_hand = 'left'  # Main par défaut pour la collecte de données
 
     # =============================================================================
     # Partie 2: Initialisation des composants
@@ -311,16 +313,6 @@ class ConductorTracker:
         gesture = torch.argmax(prediction).item()
         return gesture
 
-    def get_gesture_name(self, gesture):
-        """
-        Retourne le nom correspondant au geste reconnu à partir de son index.
-
-        :param gesture: Index du geste
-        :return: Nom du geste
-        """
-        gestures = ["Levée", "Battue", "Dynamique", "Arrêt"]
-        return gestures[gesture]
-
     def processing_loop(self):
         """
         Boucle principale de traitement des frames :
@@ -356,16 +348,17 @@ class ConductorTracker:
                     # Détection du mouvement pour la main actuelle
                     self.detect_movement(hand_type, current_x, current_y)
 
-                    # Reconnaissance du geste effectué par la main
-                    gesture = self.recognize_gesture(hand_landmarks.landmark)
-                    if gesture is not None:
-                        gesture_name = self.get_gesture_name(gesture)
-                        # Affichage du geste reconnu sur la frame
-                        cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    # Reconnaissance du geste effectué par la main opposée à celle du tempo
+                    if hand_type == self.gesture_hand:
+                        gesture = self.recognize_gesture(hand_landmarks.landmark)
+                        if gesture is not None:
+                            gesture_name = self.get_gesture_name(gesture)
+                            # Affichage du geste reconnu sur la frame
+                            cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-                    # Collecte des données si activée
-                    if self.collecting_data:
+                    # Collecte des données si activée et pour la main sélectionnée
+                    if self.collecting_data and hand_type == self.collecting_hand:
                         landmarks = [[landmark.x, landmark.y, landmark.z] for landmark in hand_landmarks.landmark]
                         self.gesture_data.append(landmarks)
                         self.gesture_labels.append(self.current_gesture_label)
@@ -479,20 +472,38 @@ class ConductorTracker:
     # =============================================================================
     # Partie 11: Collecte des données de gestes
     # =============================================================================
-    def start_data_collection(self, gesture_label):
-        """Démarre la collecte des données pour un geste spécifique."""
+    def start_data_collection(self, gesture_label, hand):
+        """Démarre la collecte des données pour un geste spécifique et une main spécifique."""
         self.collecting_data = True
         self.current_gesture_label = gesture_label
-        print(f"Collecte des données pour le geste: {gesture_label}")
+        self.collecting_hand = hand
+        print(f"Collecte des données pour le geste: {gesture_label} avec la main: {hand}")
 
     def stop_data_collection(self):
         """Arrête la collecte des données."""
         self.collecting_data = False
         print("Collecte des données arrêtée.")
+        # Générer des données pour les deux mains
+        generated_gesture_data = []
+        generated_gesture_labels = []
+        for landmarks, label in zip(self.gesture_data, self.gesture_labels):
+            generated_gesture_data.append(landmarks)
+            generated_gesture_labels.append(label)
+            # Générer les données pour la main opposée
+            mirrored_landmarks = [[-x, y, z] for x, y, z in landmarks]
+            generated_gesture_data.append(mirrored_landmarks)
+            generated_gesture_labels.append(label)
         # Sauvegarder les données collectées
-        np.save(os.path.join(self.data_dir, "X_data.npy"), np.array(self.gesture_data))
-        np.save(os.path.join(self.data_dir, "Y_data.npy"), np.array(self.gesture_labels))
+        np.save(os.path.join(self.data_dir, "X_data.npy"), np.array(generated_gesture_data))
+        np.save(os.path.join(self.data_dir, "Y_data.npy"), np.array(generated_gesture_labels))
         print("Données sauvegardées.")
+
+    def update_tempo_hand(self, new_tempo_hand):
+        """Mise à jour de la main utilisée pour donner le tempo et la main pour la reconnaissance des gestes."""
+        self.tempo_hand = new_tempo_hand
+        self.gesture_hand = 'left' if new_tempo_hand == 'right' else 'right'
+        print(f"Main pour le tempo mise à jour : {new_tempo_hand}")
+        print(f"Main pour la reconnaissance des gestes : {self.gesture_hand}")
 
 # =============================================================================
 # Partie 12: Interface de réglage avec CustomTkinter
@@ -513,6 +524,7 @@ class SettingsWindow:
         self.threshold_var = ctk.IntVar(value=self.tracker.config['movement_threshold'])
         self.delay_var = ctk.DoubleVar(value=self.tracker.config['sound_delay'])
         self.debug_var = ctk.BooleanVar(value=self.tracker.config['debug_mode'])
+        self.collecting_hand_var = ctk.StringVar(value=self.tracker.collecting_hand)
 
         # Construction de l'interface graphique
         self.create_widgets()
@@ -568,6 +580,10 @@ class SettingsWindow:
         self.gesture_option = ctk.CTkOptionMenu(data_frame, variable=self.gesture_var, values=["Levée", "Crescendo", "Diminuendo", "Arrêt"])
         self.gesture_option.grid(row=1, column=1, padx=5, pady=5)
 
+        ctk.CTkLabel(data_frame, text="Main pour la collecte:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.collecting_hand_option = ctk.CTkOptionMenu(data_frame, variable=self.collecting_hand_var, values=["left", "right"])
+        self.collecting_hand_option.grid(row=2, column=1, padx=5, pady=5)
+
         # Frame pour l'affichage vidéo
         video_frame = ctk.CTkFrame(self.root)
         video_frame.grid(row=4, column=0, padx=10, pady=10, sticky="nsew")
@@ -596,8 +612,7 @@ class SettingsWindow:
     def update_tempo_hand(self, event):
         """Mise à jour de la main utilisée pour donner le tempo."""
         new_value = self.tempo_hand_var.get()
-        self.tracker.tempo_hand = new_value
-        print("Main pour le tempo mise à jour :", new_value)
+        self.tracker.update_tempo_hand(new_value)
 
     def calibrate(self):
         """Lance la phase de calibrage et met à jour le curseur avec le nouveau seuil calculé."""
@@ -619,7 +634,8 @@ class SettingsWindow:
     def start_data_collection(self):
         """Démarre la collecte des données pour le geste sélectionné."""
         gesture_label = self.gesture_var.get()
-        self.tracker.start_data_collection(gesture_label)
+        collecting_hand = self.collecting_hand_var.get()
+        self.tracker.start_data_collection(gesture_label, collecting_hand)
 
     def stop_data_collection(self):
         """Arrête la collecte des données."""
