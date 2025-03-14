@@ -362,6 +362,11 @@ class ConductorTracker:
                         landmarks = [[landmark.x, landmark.y, landmark.z] for landmark in hand_landmarks.landmark]
                         self.gesture_data.append(landmarks)
                         self.gesture_labels.append(self.current_gesture_label)
+                        # Tracer les landmarks sur la frame
+                        for landmark in hand_landmarks.landmark:
+                            x = int(landmark.x * w)
+                            y = int(landmark.y * h)
+                            cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
             
             # Calcul du BPM à partir des battements enregistrés durant les 10 dernières secondes
             current_time = time.time()
