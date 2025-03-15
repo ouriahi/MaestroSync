@@ -1,6 +1,6 @@
 picamera2==0.3.25
 opencv-python-headless==4.5.5.64
-mediapipe==0.10.9
+mediapipe==0.10.13
 numpy==1.26.4
 pygame==2.5.0
 customtkinter==5.2.2

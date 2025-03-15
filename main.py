@@ -105,7 +105,7 @@ class ConductorTracker:
         Si le modèle n'est pas disponible, retourne None.
         """
         try:
-            model = torch.load("data/gesture_model.pth")
+            model = torch.load("model.p")  # Charger le modèle depuis le fichier
             model.eval()  # Mettre le modèle en mode évaluation
             print("Modèle de reconnaissance des gestes chargé avec succès.")
             return model
