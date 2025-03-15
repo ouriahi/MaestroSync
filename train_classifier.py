@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 import pickle
 
@@ -9,14 +10,25 @@ data_dict = pickle.load(open('./data.pickle', 'rb'))
 data = np.asarray(data_dict['data'])
 labels = np.asarray(data_dict['labels'])
 
-# Diviser les données en ensembles d'entraînement et de test
-x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=True, stratify=labels)
-
 # Convertir les données en tenseurs PyTorch
-x_train_tensor = torch.tensor(x_train, dtype=torch.float32)
-y_train_tensor = torch.tensor(y_train, dtype=torch.long)
-x_test_tensor = torch.tensor(x_test, dtype=torch.float32)
-y_test_tensor = torch.tensor(y_test, dtype=torch.long)
+data_tensor = torch.tensor(data, dtype=torch.float32)
+labels_tensor = torch.tensor(labels, dtype=torch.long)
+
+# Mélanger les données et les étiquettes de manière synchrone
+indices = torch.randperm(len(data_tensor))
+data_tensor = data_tensor[indices]
+labels_tensor = labels_tensor[indices]
+
+# Définir la taille des ensembles d'entraînement et de test
+test_size = int(0.2 * len(data_tensor))
+train_size = len(data_tensor) - test_size
+
+# Diviser les données en ensembles d'entraînement et de test
+train_dataset, test_dataset = random_split(TensorDataset(data_tensor, labels_tensor), [train_size, test_size])
+
+# Créer des DataLoaders pour les ensembles d'entraînement et de test
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Définir le modèle
 class ClassifierModel(nn.Module):
@@ -33,7 +45,7 @@ class ClassifierModel(nn.Module):
         x = self.fc3(x)
         return x
 
-input_size = x_train.shape[1]
+input_size = data_tensor.shape[1]
 hidden_size = 128
 output_size = len(np.unique(labels))
 
@@ -45,30 +57,32 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Entraîner le modèle
 num_epochs = 10
-batch_size = 32
-
 for epoch in range(num_epochs):
-    permutation = torch.randperm(x_train_tensor.size()[0])
-    for i in range(0, x_train_tensor.size()[0], batch_size):
-        indices = permutation[i:i + batch_size]
-        batch_x, batch_y = x_train_tensor[indices], y_train_tensor[indices]
-
+    running_loss = 0.0  # Pour cumuler le loss de chaque batch
+    for batch_x, batch_y in train_loader:
         optimizer.zero_grad()
         outputs = model(batch_x)
         loss = criterion(outputs, batch_y)
         loss.backward()
         optimizer.step()
-
-    print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}")
+        running_loss += loss.item()
+    
+    moyenne_loss = running_loss / len(train_loader)
+    print(f"Epoch {epoch+1}/{num_epochs}, Loss: {moyenne_loss:.4f}")
 
 # Évaluer le modèle
 model.eval()
+correct = 0
+total = 0
 with torch.no_grad():
-    outputs = model(x_test_tensor)
-    _, predicted = torch.max(outputs, 1)
-    accuracy = (predicted == y_test_tensor).sum().item() / y_test_tensor.size(0)
+    for batch_x, batch_y in test_loader:
+        outputs = model(batch_x)
+        _, predicted = torch.max(outputs, 1)
+        correct += (predicted == batch_y).sum().item()
+        total += batch_y.size(0)
+    accuracy = correct / total
 
-print(f'{accuracy * 100}% of samples were classified correctly!')
+print(f'{accuracy * 100:.2f}% des échantillons ont été classifiés correctement!')
 
 # Enregistrer le modèle
 torch.save(model, 'model.pth')
