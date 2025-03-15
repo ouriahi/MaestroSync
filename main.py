@@ -54,7 +54,7 @@ class ConductorTracker:
         # Label qui sera utilisé pour afficher la vidéo dans l'interface graphique
         self.video_label = None
 
-        # Main par défaut utilisée pour donner le tempo (ici la main droite)
+        # Main par défaut utilisée pour donner le tempo (toujours la main droite)
         self.tempo_hand = 'right'
         self.gesture_hand = 'left'  # Main opposée pour la reconnaissance des gestes
 
@@ -180,8 +180,8 @@ class ConductorTracker:
         :param current_x: Coordonnée x actuelle
         :param current_y: Coordonnée y actuelle
         """
-        # Se limiter à la main définie pour donner le tempo
-        if hand_type != self.tempo_hand:
+        # Se limiter à la main droite pour donner le tempo
+        if hand_type != 'right':
             return
 
         # Récupérer la dernière position enregistrée pour cette main
@@ -339,7 +339,7 @@ class ConductorTracker:
                     # Détection du mouvement pour la main actuelle
                     self.detect_movement(hand_type, current_x, current_y)
 
-                    # Reconnaissance du geste effectué par la main opposée à celle du tempo
+                    # Reconnaissance du geste effectué par la main gauche
                     if hand_type == self.gesture_hand:
                         gesture = self.recognize_gesture(hand_landmarks.landmark)
                         if gesture is not None:
@@ -456,9 +456,10 @@ class ConductorTracker:
 
     def update_tempo_hand(self, new_tempo_hand):
         """Mise à jour de la main utilisée pour donner le tempo et la main pour la reconnaissance des gestes."""
-        self.tempo_hand = new_tempo_hand
-        self.gesture_hand = 'left' if new_tempo_hand == 'right' else 'right'
-        print(f"Main pour le tempo mise à jour : {new_tempo_hand}")
+        # La main pour le tempo est toujours la main droite
+        self.tempo_hand = 'right'
+        self.gesture_hand = 'left'
+        print(f"Main pour le tempo mise à jour : {self.tempo_hand}")
         print(f"Main pour la reconnaissance des gestes : {self.gesture_hand}")
 
 # =============================================================================
@@ -508,7 +509,7 @@ class SettingsWindow:
 
         ctk.CTkLabel(tempo_frame, text="Main pour le tempo:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.tempo_hand_var = ctk.StringVar(value=self.tracker.tempo_hand)
-        self.tempo_hand_option = ctk.CTkOptionMenu(tempo_frame, variable=self.tempo_hand_var, values=["left", "right"], command=self.update_tempo_hand)
+        self.tempo_hand_option = ctk.CTkOptionMenu(tempo_frame, variable=self.tempo_hand_var, values=["right"], command=self.update_tempo_hand)
         self.tempo_hand_option.grid(row=0, column=1, padx=5, pady=5)
 
         # Frame pour les boutons de contrôle

@@ -20,7 +20,7 @@ data_tensor = data_tensor[indices]
 labels_tensor = labels_tensor[indices]
 
 # Définir la taille des ensembles d'entraînement et de test
-test_size = int(0.2 * len(data_tensor))
+test_size = int(0.05 * len(data_tensor))
 train_size = len(data_tensor) - test_size
 
 # Diviser les données en ensembles d'entraînement et de test
