@@ -50,9 +50,9 @@ class ConductorTracker:
         # Label pour afficher la vidéo dans l'interface graphique (sera défini dans SettingsWindow)
         self.video_label = None
 
-        # Main par défaut utilisée pour donner le tempo (toujours la main droite)
-        self.tempo_hand = 'right'
-        self.gesture_hand = 'left'  # Main opposée pour la reconnaissance des gestes
+        # Main par défaut utilisée pour donner le tempo (toujours la main gauche à cause de l'effet miroir)
+        self.tempo_hand = 'left'
+        self.gesture_hand = 'right'  # Main opposée pour la reconnaissance des gestes
 
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
@@ -145,11 +145,11 @@ class ConductorTracker:
         Détecte le mouvement en comparant la position actuelle avec la position précédente.
         Si le mouvement dépasse le seuil défini, déclenche un signal audio et active la LED.
         """
-        # Se limiter à la main droite pour donner le tempo
-        if hand_type != 'right':
+        # Se limiter à la main gauche pour donner le tempo
+        if hand_type != 'left':
             return
 
-        # Récupération des positions précédentes pour la main droite
+        # Récupération des positions précédentes pour la main gauche
         prev_x = self.positions[hand_type]['x']
         prev_y = self.positions[hand_type]['y']
 
@@ -272,7 +272,7 @@ class ConductorTracker:
                     # Conversion des coordonnées normalisées en pixels
                     current_x = int(wrist.x * w)
                     current_y = int(wrist.y * h)
-                    # Détection de mouvement pour la main droite uniquement
+                    # Détection de mouvement pour la main gauche uniquement
                     self.detect_movement(hand_type, current_x, current_y)
             
             # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
