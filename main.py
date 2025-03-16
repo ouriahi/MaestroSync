@@ -82,8 +82,8 @@ class ConductorTracker:
         Si le modèle n'est pas disponible, retourne None.
         """
         try:
-            input_dim = 63  # 21 landmarks * 3 coordonnées (x, y, z)
-            num_classes = 4  # 4 classes de gestes
+            input_dim = 42  # 21 landmarks * 2 coordonnées (x, y)
+            num_classes = 3  # 3 classes de gestes
             model = GestureClassifier(input_dim, num_classes)
             model.load_state_dict(torch.load("model.pth"))
             model.eval()  # Mettre le modèle en mode évaluation
