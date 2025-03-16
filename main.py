@@ -9,6 +9,22 @@ import threading                    # Pour le multithreading
 import queue                        # Pour les files d'attente entre threads
 import customtkinter as ctk         # Pour l'interface graphique avec CustomTkinter
 from PIL import Image, ImageTk      # Pour la conversion d'images pour Tkinter
+import torch                        # Utilisation de PyTorch pour les modèles de machine learning
+import torch.nn as nn               # Pour la définition des modèles de réseaux de neurones
+
+# Définition du modèle de classification des gestes
+class GestureClassifier(nn.Module):
+    def __init__(self, input_dim, num_classes):
+        super(GestureClassifier, self).__init__()
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(128, num_classes)
+        
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
 
 # =====================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -54,8 +70,53 @@ class ConductorTracker:
         self.tempo_hand = 'left'
         self.gesture_hand = 'right'  # Main opposée pour la reconnaissance des gestes
 
+        # Chargement du modèle de reconnaissance des gestes (machine learning)
+        self.gesture_model = self.load_gesture_model()
+
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
+
+    def load_gesture_model(self):
+        """
+        Charge le modèle PyTorch pour la reconnaissance des gestes.
+        Si le modèle n'est pas disponible, retourne None.
+        """
+        try:
+            input_dim = 63  # 21 landmarks * 3 coordonnées (x, y, z)
+            num_classes = 4  # 4 classes de gestes
+            model = GestureClassifier(input_dim, num_classes)
+            model.load_state_dict(torch.load("model.pth"))
+            model.eval()  # Mettre le modèle en mode évaluation
+            print("Modèle de reconnaissance des gestes chargé avec succès.")
+            return model
+        except (IOError, ValueError) as e:
+            print("Aucun modèle de reconnaissance des gestes trouvé. Mode collecte de données activé.")
+            return None
+
+    def recognize_gesture(self, landmarks):
+        """
+        Utilise le modèle de machine learning pour reconnaître le geste à partir
+        des landmarks (points de repère) de la main.
+        Si le modèle n'est pas disponible, retourne None.
+
+        :param landmarks: Liste des landmarks détectés
+        :return: Index du geste reconnu ou None si le modèle n'est pas disponible
+        """
+        if self.gesture_model is None:
+            return None
+
+        # Préparation des données d'entrée pour le modèle
+        input_data = torch.tensor([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten().unsqueeze(0)
+        # Prédiction du geste via le modèle PyTorch
+        with torch.no_grad():
+            prediction = self.gesture_model(input_data)
+        gesture = torch.argmax(prediction).item()
+        return gesture
+
+    def get_gesture_name(self, gesture):
+        """Retourne le nom du geste en fonction de l'index de la classe."""
+        gesture_names = ["Arrêt", "Levée", "Crescendo", "Decrescendo"]
+        return gesture_names[gesture]
 
     # =================================================================
     # Partie 2: Initialisation des composants
@@ -274,6 +335,15 @@ class ConductorTracker:
                     current_y = int(wrist.y * h)
                     # Détection de mouvement pour la main gauche uniquement
                     self.detect_movement(hand_type, current_x, current_y)
+
+                    # Reconnaissance du geste effectué par la main droite
+                    if hand_type == self.gesture_hand:
+                        gesture = self.recognize_gesture(hand_landmarks.landmark)
+                        if gesture is not None:
+                            gesture_name = self.get_gesture_name(gesture)
+                            # Affichage du geste reconnu sur la frame
+                            cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
             current_time = time.time()
