@@ -83,7 +83,7 @@ class ConductorTracker:
         """
         try:
             input_dim = 42  # 21 landmarks * 2 coordonnées (x, y)
-            num_classes = 3  # 3 classes de gestes
+            num_classes = 4  # 4 classes de gestes
             model = GestureClassifier(input_dim, num_classes)
             model.load_state_dict(torch.load("model.pth"))
             model.eval()  # Mettre le modèle en mode évaluation
@@ -106,7 +106,7 @@ class ConductorTracker:
             return None
 
         # Préparation des données d'entrée pour le modèle
-        input_data = torch.tensor([[landmark.x, landmark.y, landmark.z] for landmark in landmarks]).flatten().unsqueeze(0)
+        input_data = torch.tensor([[landmark.x, landmark.y] for landmark in landmarks]).flatten().unsqueeze(0)
         # Prédiction du geste via le modèle PyTorch
         with torch.no_grad():
             prediction = self.gesture_model(input_data)
