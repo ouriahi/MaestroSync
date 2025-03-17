@@ -214,10 +214,11 @@ class ConductorTracker:
 
         # Détermination du geste en fonction des doigts levés et du mouvement vertical
         gesture = None
-        if current_y < prev_y and fingers == [1, 1, 1, 1, 1]:
-            gesture = 'Crescendo'
-        elif current_y > prev_y and fingers == [1, 1, 1, 1, 1]:
-            gesture = 'Decrescendo'
+        if abs(current_x - prev_x) > self.config['movement_threshold'] and fingers == [1, 1, 1, 1, 1]:
+            if current_y < prev_y:
+                gesture = 'Crescendo'
+            else:
+                gesture = 'Decrescendo'
         if fingers == [0 or 1, 0, 0, 0, 0]:
             gesture = 'Silence'
         if fingers == [0 or 1, 1, 0, 0, 0]:
@@ -322,8 +323,14 @@ class ConductorTracker:
                         gesture = self.recognize_gesture(hand_type, current_x, current_y, hand_landmarks.landmark)
                         if gesture is not None:
                             # Affichage du geste reconnu sur la frame
-                            cv2.putText(frame, f"Geste: {gesture}", (10, 60),
+                            cv2.putText(frame, f"Geste: {gesture}", (10, 90),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                            # Si le geste est "Silence", la LED devient rouge
+                            if gesture == 'Silence':
+                                self.led_on = True
+                                led_color = (0, 0, 255)  # Rouge
+                            else:
+                                led_color = (0, 255, 0) if self.led_on else (50, 50, 50)  # Vert ou gris
             
             # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
             current_time = time.time()
