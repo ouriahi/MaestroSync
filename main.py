@@ -214,7 +214,7 @@ class ConductorTracker:
 
         # Détermination du geste en fonction des doigts levés et du mouvement vertical
         gesture = None
-        if abs(current_x - prev_x) > self.config['movement_threshold'] and fingers == [1, 1, 1, 1, 1]:
+        if abs(current_x - prev_y) > self.config['movement_threshold'] and fingers == [1, 1, 1, 1, 1]:
             if current_y < prev_y:
                 gesture = 'Crescendo'
             else:
