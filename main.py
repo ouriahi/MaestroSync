@@ -294,47 +294,39 @@ class ConductorTracker:
         """Traite les frames vidéo, détecte les mouvements, calcule le BPM et met à jour l'affichage."""
         while self.running:
             try:
-                # Récupère une frame dans la file d'attente
                 frame = self.frame_queue.get(timeout=0.05)
             except queue.Empty:
-                continue  # Si aucune frame n'est disponible, on continue
+                continue
 
             # Conversion de la frame de BGR à RGB pour MediaPipe
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            # Traitement de la frame pour détecter les mains
             results = self.hands.process(frame_rgb)
 
+            # Flag indiquant si le geste "Silence" a été détecté dans cette frame
+            gesture_silence_detected = False
+
             if results.multi_hand_landmarks:
-                # Pour chaque main détectée
                 for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                    # Récupération du type de main
                     hand_type = handedness.classification[0].label.lower()
-                    # Sélection du landmark du poignet
                     wrist = hand_landmarks.landmark[0]
                     h, w = frame.shape[:2]
-                    # Conversion des coordonnées normalisées en pixels
                     current_x = int(wrist.x * w)
                     current_y = int(wrist.y * h)
                     # Détection de mouvement pour la main gauche uniquement
                     self.detect_movement(hand_type, current_x, current_y)
 
-                    # Reconnaissance du geste effectué par la main droite
+                    # Reconnaissance du geste pour la main droite
                     if hand_type == self.gesture_hand:
                         gesture = self.recognize_gesture(hand_type, current_x, current_y, hand_landmarks.landmark)
                         if gesture is not None:
-                            # Affichage du geste reconnu sur la frame
                             cv2.putText(frame, f"Geste: {gesture}", (10, 90),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                            # Si le geste est "Silence", la LED devient rouge
+                            # Si le geste est "Silence", on active le flag
                             if gesture == 'Silence':
-                                self.led_on = True
-                                led_color = (0, 0, 255)  # Rouge
-                            else:
-                                led_color = (0, 255, 0) if self.led_on else (50, 50, 50)  # Vert ou gris
-            
-            # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
+                                gesture_silence_detected = True
+
+            # Calcul du BPM (inchangé)
             current_time = time.time()
-            # Filtrer les battements pour ne conserver que ceux des 10 dernières secondes
             self.beat_times = [t for t in self.beat_times if current_time - t <= 10]
             if len(self.beat_times) >= 2:
                 total_time = self.beat_times[-1] - self.beat_times[0]
@@ -343,36 +335,37 @@ class ConductorTracker:
             else:
                 bpm = 0
 
-            # Obtenir le nom du tempo correspondant au BPM calculé
             tempo_name = self.get_tempo_name(bpm)
 
-            # Dessiner une LED sur l'image pour indiquer l'état du mouvement
-            # Couleur verte si un mouvement est détecté (LED allumée), sinon gris
-            led_color = (0, 255, 0) if self.led_on else (50, 50, 50)
+            # Choix de la couleur de la LED :
+            # Si le geste "Silence" a été détecté, la LED est rouge, sinon
+            # elle est verte si un mouvement est détecté ou grise par défaut.
+            if gesture_silence_detected:
+                led_color = (0, 0, 255)  # Rouge
+            else:
+                led_color = (0, 255, 0) if self.led_on else (50, 50, 50)  # Vert ou gris
+
             cv2.circle(frame, (50, 50), 20, led_color, -1)
 
-            # Redimensionnement de la frame pour l'affichage
+            # Redimensionnement et affichage de la frame
             resized_frame = cv2.resize(frame, (640, 480))
-            # Affichage du BPM et du nom du tempo sur la frame
             cv2.putText(resized_frame, f"BPM: {bpm:.1f} ({tempo_name})", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # Conversion de l'image pour l'affichage dans l'interface Tkinter
             img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img)
             imgtk = ImageTk.PhotoImage(image=img)
 
-            # Mise à jour du label vidéo dans l'interface graphique si défini
             if self.video_label:
-                self.video_label.imgtk = imgtk  # Conservation d'une référence à l'image
+                self.video_label.imgtk = imgtk
                 self.video_label.configure(image=imgtk)
 
-            # Vérification des touches (bien que l'interface soit Tkinter, on conserve une gestion basique)
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 self.running = False
             elif key == ord('d'):
                 self.config['debug_mode'] = not self.config['debug_mode']
+
 
     # =================================================================
     # Partie 8: Boucle de gestion audio (Thread dédié)
