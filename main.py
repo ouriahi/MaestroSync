@@ -218,10 +218,10 @@ class ConductorTracker:
             gesture = 'Crescendo'
         elif current_y > prev_y and fingers == [1, 1, 1, 1, 1]:
             gesture = 'Decrescendo'
-        elif fingers == [0, 0, 0, 0, 0]:
+        if fingers == [0 or 1, 0, 0, 0, 0]:
             gesture = 'Silence'
-        elif fingers == [0, 1, 0, 0, 0]:
-            gesture = 'Levée'
+        if fingers == [0 or 1, 1, 0, 0, 0]:
+            gesture = 'Levee'
 
         # Mise à jour des positions pour la main droite
         self.positions[hand_type]['x'] = current_x
