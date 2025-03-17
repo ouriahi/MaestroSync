@@ -58,33 +58,6 @@ class ConductorTracker:
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
 
-
-
-    def recognize_gesture(self, landmarks):
-        """
-        Utilise le modèle de machine learning pour reconnaître le geste à partir
-        des landmarks (points de repère) de la main.
-        Si le modèle n'est pas disponible, retourne None.
-
-        :param landmarks: Liste des landmarks détectés
-        :return: Index du geste reconnu ou None si le modèle n'est pas disponible
-        """
-        if self.gesture_model is None:
-            return None
-
-        # Préparation des données d'entrée pour le modèle
-        input_data = torch.tensor([[landmark.x, landmark.y] for landmark in landmarks]).flatten().unsqueeze(0)
-        # Prédiction du geste via le modèle PyTorch
-        with torch.no_grad():
-            prediction = self.gesture_model(input_data)
-        gesture = torch.argmax(prediction).item()
-        return gesture
-
-    def get_gesture_name(self, gesture):
-        """Retourne le nom du geste en fonction de l'index de la classe."""
-        gesture_names = ["Arrêt", "Levée", "Crescendo", "Decrescendo"]
-        return gesture_names[gesture]
-
     # =================================================================
     # Partie 2: Initialisation des composants
     # =================================================================
@@ -187,14 +160,12 @@ class ConductorTracker:
 
         # Vérification du mouvement vertical
         if abs(current_y - prev_y) > self.config['movement_threshold']:
-            # Détermination de la direction verticale
             directions.append('Haut' if current_y < prev_y else 'Bas')
             movement_detected = True
             self.led_on = True  # Activer la LED si le mouvement est détecté
 
         # Vérification du mouvement horizontal
         if abs(current_x - prev_x) > self.config['movement_threshold']:
-            # Détermination de la direction horizontale
             directions.append('Gauche' if current_x < prev_x else 'Droite')
             movement_detected = True
             self.led_on = True  # Activer la LED en cas de mouvement
@@ -216,7 +187,50 @@ class ConductorTracker:
         self.positions[hand_type]['y'] = current_y
 
     # =================================================================
-    # Partie 5: Boucle de capture vidéo (Thread dédié)
+    # Partie 5: Détection de geste (main droite)
+    # =================================================================
+    def recognize_gesture(self, hand_type, current_x, current_y, landmarks):
+        """
+        Détecte le geste effectué par la main droite en analysant l'état des doigts.
+        Les conditions de geste sont déterminées après la constitution de la liste "fingers".
+        """
+        # On ne traite que la main droite
+        if hand_type != 'right':
+            return None
+
+        # Récupération de la position verticale précédente pour la main droite
+        prev_y = self.positions[hand_type]['y']
+
+        # Analyse de l'état des doigts à partir des landmarks
+        fingers = []
+        # Indices des landmarks correspondant aux extrémités des doigts
+        tips = [4, 8, 12, 16, 20]
+        for tip in tips:
+            # Comparaison de la coordonnée y de la pointe avec celle de la jointure située deux positions avant
+            if landmarks[tip].y < landmarks[tip - 2].y:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+
+        # Détermination du geste en fonction des doigts levés et du mouvement vertical
+        gesture = None
+        if current_y < prev_y and fingers == [1, 1, 1, 1, 1]:
+            gesture = 'Crescendo'
+        elif current_y > prev_y and fingers == [1, 1, 1, 1, 1]:
+            gesture = 'Decrescendo'
+        elif fingers == [0, 0, 0, 0, 0]:
+            gesture = 'Silence'
+        elif fingers == [0, 1, 0, 0, 0]:
+            gesture = 'Levée'
+
+        # Mise à jour des positions pour la main droite
+        self.positions[hand_type]['x'] = current_x
+        self.positions[hand_type]['y'] = current_y
+
+        return gesture
+
+    # =================================================================
+    # Partie 6: Boucle de capture vidéo (Thread dédié)
     # =================================================================
     def capture_loop(self):
         """Capture en continu les frames depuis la caméra et les place dans la file d'attente."""
@@ -232,7 +246,7 @@ class ConductorTracker:
             time.sleep(0.01)  # Pause courte pour limiter l'utilisation CPU
 
     # =================================================================
-    # Partie 6: Boucle de traitement d'image et affichage (Thread dédié)
+    # Partie 7: Boucle de traitement d'image et affichage (Thread dédié)
     # =================================================================
     def get_tempo_name(self, bpm):
         """Retourne le nom du tempo en fonction du BPM"""
@@ -305,11 +319,10 @@ class ConductorTracker:
 
                     # Reconnaissance du geste effectué par la main droite
                     if hand_type == self.gesture_hand:
-                        gesture = self.recognize_gesture(hand_landmarks.landmark)
+                        gesture = self.recognize_gesture(hand_type, current_x, current_y, hand_landmarks.landmark)
                         if gesture is not None:
-                            gesture_name = self.get_gesture_name(gesture)
                             # Affichage du geste reconnu sur la frame
-                            cv2.putText(frame, f"Geste: {gesture_name}", (10, 60),
+                            cv2.putText(frame, f"Geste: {gesture}", (10, 60),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             # Calcul du BPM à partir des battements enregistrés pendant les 10 dernières secondes
@@ -355,7 +368,7 @@ class ConductorTracker:
                 self.config['debug_mode'] = not self.config['debug_mode']
 
     # =================================================================
-    # Partie 7: Boucle de gestion audio (Thread dédié)
+    # Partie 8: Boucle de gestion audio (Thread dédié)
     # =================================================================
     def audio_loop(self):
         """Écoute les événements audio dans la file d'attente et joue le son correspondant."""
@@ -371,7 +384,7 @@ class ConductorTracker:
                 self.sound.play()
 
     # =================================================================
-    # Partie 8: Démarrage de l'application en multithreading (sans blocage)
+    # Partie 9: Démarrage de l'application en multithreading (sans blocage)
     # =================================================================
     def run(self):
         """Démarre les threads pour la capture vidéo, le traitement d'image et la gestion audio."""
@@ -393,7 +406,7 @@ class ConductorTracker:
             t.start()
 
     # =================================================================
-    # Partie 9: Arrêt de l'application
+    # Partie 10: Arrêt de l'application
     # =================================================================
     def stop(self):
         """Arrête les threads en cours et lance le nettoyage des ressources."""
@@ -402,7 +415,7 @@ class ConductorTracker:
         self.cleanup()
 
     # =================================================================
-    # Partie 10: Nettoyage des ressources
+    # Partie 11: Nettoyage des ressources
     # =================================================================
     def cleanup(self):
         """Libère toutes les ressources et arrête les composants utilisés."""
@@ -413,7 +426,7 @@ class ConductorTracker:
         print("Nettoyage terminé")
 
 # =====================================================================
-# Partie 11: Interface de réglage avec CustomTkinter
+# Partie 12: Interface de réglage avec CustomTkinter
 # =====================================================================
 class SettingsWindow:
     def __init__(self, tracker: ConductorTracker):
@@ -501,7 +514,7 @@ class SettingsWindow:
         self.root.mainloop()
 
 # =====================================================================
-# Partie 12: Point d'entrée principal
+# Partie 13: Point d'entrée principal
 # =====================================================================
 if __name__ == "__main__":
     # Création de l'instance du tracker
