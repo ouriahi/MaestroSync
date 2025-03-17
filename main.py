@@ -9,22 +9,7 @@ import threading                    # Pour le multithreading
 import queue                        # Pour les files d'attente entre threads
 import customtkinter as ctk         # Pour l'interface graphique avec CustomTkinter
 from PIL import Image, ImageTk      # Pour la conversion d'images pour Tkinter
-import torch                        # Utilisation de PyTorch pour les modèles de machine learning
-import torch.nn as nn               # Pour la définition des modèles de réseaux de neurones
 
-# Définition du modèle de classification des gestes
-class GestureClassifier(nn.Module):
-    def __init__(self, input_dim, num_classes):
-        super(GestureClassifier, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 128)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(128, num_classes)
-        
-    def forward(self, x):
-        out = self.fc1(x)
-        out = self.relu(out)
-        out = self.fc2(x)
-        return out
 
 # =====================================================================
 # Partie 1: Classe principale pour la gestion du projet
@@ -70,28 +55,10 @@ class ConductorTracker:
         self.tempo_hand = 'left'
         self.gesture_hand = 'right'  # Main opposée pour la reconnaissance des gestes
 
-        # Chargement du modèle de reconnaissance des gestes (machine learning)
-        self.gesture_model = self.load_gesture_model()
-
         # Appel à la méthode d'initialisation des composants (caméra, audio, MediaPipe)
         self.initialize_components()
 
-    def load_gesture_model(self):
-        """
-        Charge le modèle PyTorch pour la reconnaissance des gestes.
-        Si le modèle n'est pas disponible, retourne None.
-        """
-        try:
-            input_dim = 42  # 21 landmarks * 2 coordonnées (x, y)
-            num_classes = 4  # 4 classes de gestes
-            model = GestureClassifier(input_dim, num_classes)
-            model.load_state_dict(torch.load("model.pth"))
-            model.eval()  # Mettre le modèle en mode évaluation
-            print("Modèle de reconnaissance des gestes chargé avec succès.")
-            return model
-        except (IOError, ValueError) as e:
-            print("Aucun modèle de reconnaissance des gestes trouvé. Mode collecte de données activé.")
-            return None
+
 
     def recognize_gesture(self, landmarks):
         """
