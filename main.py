@@ -1,5 +1,5 @@
 """
-Conductor Tracker
+MaestroSynch
 -----------------
 Application de suivi des mouvements du chef d'orchestre basée sur Picamera2, OpenCV, MediaPipe, Pygame et CustomTkinter.
 Permet de détecter les mouvements des mains, de calibrer le seuil de mouvement, d'afficher le tempo (BPM) et de jouer un son de métronome.
